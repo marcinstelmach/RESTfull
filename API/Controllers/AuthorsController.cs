@@ -13,12 +13,12 @@ namespace API.Controllers
 {
     [Produces("application/json")]
     [Route("api/authors")]
-    public class AuthorController : Controller
+    public class AuthorsController : Controller
     {
         private readonly IAuthorRepository _authorRepository;
         private readonly IMapper _mapper;
 
-        public AuthorController(IAuthorRepository authorRepository, IMapper mapper)
+        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
