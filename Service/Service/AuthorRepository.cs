@@ -24,8 +24,8 @@ namespace Service.Service
             if (author!=null)
             {
                 _dbContext.Authors.Add(author);
-                await SaveAsync();
             }
+            await Task.CompletedTask;
         }
 
         public async Task<bool> AuthorExists(Guid authorId)
@@ -36,7 +36,7 @@ namespace Service.Service
         public async Task DeleteAuthor(Author author)
         {
             _dbContext.Authors.Remove(author);
-            await SaveAsync();
+            await Task.CompletedTask;
         }
 
         public async Task<Author> GetAuthor(Guid authorId)

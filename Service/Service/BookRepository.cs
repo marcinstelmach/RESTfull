@@ -38,13 +38,13 @@ namespace Service.Service
         public async Task UpdateBookForAuthor(Book book)
         {
             _dbContext.Books.Update(book);
-            await SaveAsync();
+            await Task.CompletedTask;
         }
 
         public async Task DeleteBook(Book book)
         {
             _dbContext.Books.Remove(book);
-            await SaveAsync();
+            await Task.CompletedTask;
         }
 
         public async Task<bool> SaveAsync()

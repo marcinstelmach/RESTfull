@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace Data.DTO
 {
-    public class BookDto
+    public class BookForCreation
     {
-        public Guid Id { get; set; }
+        [Required]
+        [MaxLength(100)]
         public string Title { get; set; }
+        [Required]
+        [MaxLength(500)]
         public string Description { get; set; }
-        public Guid AuthorId { get; set; }
     }
 }

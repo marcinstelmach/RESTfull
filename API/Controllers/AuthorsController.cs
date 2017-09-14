@@ -11,7 +11,6 @@ using Service.Service;
 
 namespace API.Controllers
 {
-    [Produces("application/json")]
     [Route("api/authors")]
     public class AuthorsController : Controller
     {
@@ -35,7 +34,7 @@ namespace API.Controllers
             return Ok(authorDto);
         }
 
-        [HttpGet("{authorId}")]
+        [HttpGet("{authorId}", Name = "Get_Author")]
         public async Task<IActionResult> GetAuthor(Guid authorId)
         {
             var author = await _authorRepository.GetAuthor(authorId);
@@ -45,6 +44,23 @@ namespace API.Controllers
             }
             var authorDto = _mapper.Map<Author, AuthorDto>(author);
             return Ok(authorDto);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateAuthor([FromBody] AuthorForCreation authorForCreation)
+        {
+            if (!ModelState.IsValid) return BadRequest();
+            var author = _mapper.Map<AuthorForCreation, Author>(authorForCreation);
+            await _authorRepository.AddAuthor(author);
+            if (! await _authorRepository.SaveAsync())
+            {
+                return StatusCode(500, "A problem with save");
+            }
+
+            var authorDto = _mapper.Map<Author, AuthorDto>(author);
+            return CreatedAtRoute("Get_Author", new {authorId = authorDto.Id}, authorDto);
+
+
         }
     }
 }
