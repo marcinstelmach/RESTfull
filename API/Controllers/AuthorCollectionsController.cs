@@ -24,14 +24,14 @@ namespace API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateAuthorCollection([FromBody] IEnumerable<AuthorForCreation> authorForCreations)
+        public async Task<IActionResult> CreateAuthorCollection([FromBody] IList<AuthorForCreation> authorForCreations)
         {
             if (!authorForCreations.Any())
             {
                 return BadRequest();
             }
 
-            var author = _mapper.Map<IEnumerable<AuthorForCreation>, IEnumerable<Author>>(authorForCreations);
+            var author = _mapper.Map<IList<AuthorForCreation>, IList<Author>>(authorForCreations);
             author.ToList().ForEach(async a => await _authorRepository.AddAuthor(a));
 
             if (!await _authorRepository.SaveAsync())
@@ -41,6 +41,22 @@ namespace API.Controllers
 
             return Ok();
 
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAuthorCollection(IList<Guid> authorIds)
+        {
+            if (!authorIds.Any())
+            {
+                return BadRequest();
+            }
+
+            var authors = await _authorRepository.GetAuthors(authorIds);
+            if (!authors.Any())
+            {
+                return NotFound();
+            }
+            return Ok(authors);
         }
     }
 }

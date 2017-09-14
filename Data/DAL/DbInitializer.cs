@@ -10,6 +10,7 @@ namespace Data.DAL
     {
         public static void EnsureSeedDataForContext(LibraryContext context)
         {
+            context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
             if (context.Books.Any())
             {
@@ -25,7 +26,7 @@ namespace Data.DAL
                     FirstName = "Stephen",
                     LastName = "King",
                     Genre = "Horror",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1947, 9, 21)),
+                    DateOfBirth = new DateTime(1947, 9, 21),
                     Books = new List<Book>()
                     {
                         new Book()
@@ -60,7 +61,7 @@ namespace Data.DAL
                     FirstName = "George",
                     LastName = "RR Martin",
                     Genre = "Fantasy",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1948, 9, 20)),
+                    DateOfBirth =new DateTime(1948, 9, 20),
                     Books = new List<Book>()
                     {
                         new Book()
@@ -89,7 +90,7 @@ namespace Data.DAL
                     FirstName = "Neil",
                     LastName = "Gaiman",
                     Genre = "Fantasy",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1960, 11, 10)),
+                    DateOfBirth = new DateTime(1960, 11, 10),
                     Books = new List<Book>()
                     {
                         new Book()
@@ -106,7 +107,7 @@ namespace Data.DAL
                     FirstName = "Tom",
                     LastName = "Lanoye",
                     Genre = "Various",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1958, 8, 27)),
+                    DateOfBirth = new DateTime(1958, 8, 27),
                     Books = new List<Book>()
                     {
                         new Book()
@@ -123,7 +124,7 @@ namespace Data.DAL
                     FirstName = "Douglas",
                     LastName = "Adams",
                     Genre = "Science fiction",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1952, 3, 11)),
+                    DateOfBirth = new DateTime(1952, 3, 11),
                     Books = new List<Book>()
                     {
                         new Book()
@@ -140,7 +141,7 @@ namespace Data.DAL
                     FirstName = "Jens",
                     LastName = "Lapidus",
                     Genre = "Thriller",
-                    DateOfBirth = new DateTimeOffset(new DateTime(1974, 5, 24)),
+                    DateOfBirth = new DateTime(1974, 5, 24),
                     Books = new List<Book>()
                     {
                         new Book()

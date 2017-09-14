@@ -19,12 +19,12 @@ namespace Data.Model
         public string LastName { get; set; }
 
         [Required]
-        public DateTimeOffset DateOfBirth { get; set; }
+        public DateTime DateOfBirth { get; set; }
 
         [Required]
         [MaxLength(50)]
         public string Genre { get; set; }
 
-        public ICollection<Book> Books { get; set; } = new List<Book>();
+        public IList<Book> Books { get; set; } = new List<Book>();
     }
 }
