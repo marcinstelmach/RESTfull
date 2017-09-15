@@ -7,6 +7,7 @@ using Data.DTO;
 using Data.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Service.Helpers;
 using Service.Service;
 
 namespace API.Controllers
@@ -39,12 +40,14 @@ namespace API.Controllers
                 return StatusCode(500, "Fail with saving data");
             }
 
-            return Ok();
+            var authorsDto = _mapper.Map<IList<Author>, IList<AuthorDto>>(author);
+            var idsString = string.Join(",", authorsDto.Select(s => s.Id));
 
+            return CreatedAtRoute("GetAuthorCollection", new {authorIds = idsString}, authorsDto);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAuthorCollection(IList<Guid> authorIds)
+        [HttpGet("{authorIds}", Name = "GetAuthorCollection")]
+        public async Task<IActionResult> GetAuthorCollection([ModelBinder(BinderType = typeof(ArrayModelBinder))]IEnumerable<Guid> authorIds)
         {
             if (!authorIds.Any())
             {
@@ -52,11 +55,13 @@ namespace API.Controllers
             }
 
             var authors = await _authorRepository.GetAuthors(authorIds);
-            if (!authors.Any())
+            if (authorIds.Count() != authors.Count())
             {
                 return NotFound();
             }
-            return Ok(authors);
+
+            var authorsDto = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
+            return Ok(authorsDto);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Service.Service
         public async Task AddBookForAuthor(Guid authorId, Book book)
         {
             var author = await _dbContext.Authors.FirstOrDefaultAsync(s => s.Id == authorId);
-            if (author != null)
+            if (author == null)
                 book.Id = Guid.NewGuid();
             author.Books.Add(book);
         }

@@ -20,6 +20,10 @@ namespace API
             CreateMap<AuthorForCreation, Author>()
                 .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => DateTime.ParseExact(src.DateOfBirth, "yyyy-MM-dd", CultureInfo.InvariantCulture)));
             CreateMap<BookForCreation, Book>();
+            //CreateMap<BookForUpdateDto, Book>()
+            //    .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
+            //    .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
+            CreateMap<BookForUpdateDto, Book>();
         }
     }
 }
