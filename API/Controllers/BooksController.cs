@@ -5,6 +5,7 @@ using AutoMapper;
 using Data.DTO;
 using Data.Model;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Service.Service;
 
@@ -115,5 +116,53 @@ namespace API.Controllers
 
             return Ok(bookDto);
         }
-    }
+
+        [HttpPatch("{bookId}")]
+        public async Task<IActionResult> PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId, [FromBody] JsonPatchDocument<BookForUpdateDto> jsonPatchDocument)
+        {
+            if (jsonPatchDocument==null)
+            {
+                return BadRequest();
+            }
+
+            var author = await _authorRepository.GetAuthor(authorId);
+            if (author==null)
+            {
+                return NotFound();
+            }
+
+            var bookFromRepo = await _bookRepository.GetBookForAuthor(authorId, bookId);
+            if (bookFromRepo==null)
+            {
+                var bookUpdateDto = new BookForUpdateDto();
+                jsonPatchDocument.ApplyTo(bookUpdateDto);
+                var bookToAdd = _mapper.Map<Book>(bookUpdateDto);
+                bookToAdd.Id = bookId;
+                bookToAdd.AuthorId = authorId;
+
+                await _bookRepository.AddBookForAuthor(authorId, bookToAdd);
+
+                if (! await _bookRepository.SaveAsync())
+                {
+                    throw new Exception($"Adding book {bookId} on save failed");
+                }
+                var bookDto = _mapper.Map<BookDto>(bookToAdd);
+
+                return CreatedAtRoute("GetBookForAuthor", new {authorId = bookToAdd.AuthorId, bookId = bookToAdd.Id}, bookDto);
+            }
+
+            var bookToPath = _mapper.Map<Book, BookForUpdateDto>(bookFromRepo);
+            jsonPatchDocument.ApplyTo(bookToPath);
+            _mapper.Map(bookToPath, bookFromRepo);
+            //await _bookRepository.UpdateBookForAuthor(bookFromRepo);
+
+            if (! await _bookRepository.SaveAsync())
+            {
+                throw new Exception($"Patching book {bookId} on save faild");
+            }
+
+            return NoContent();
+        }
+
+}
 }

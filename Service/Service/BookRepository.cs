@@ -37,7 +37,7 @@ namespace Service.Service
 
         public async Task UpdateBookForAuthor(Book book)
         {
-            _dbContext.Books.Update(book);
+            //_dbContext.Books.Update(book);
             await Task.CompletedTask;
         }
 

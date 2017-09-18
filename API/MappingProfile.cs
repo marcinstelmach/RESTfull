@@ -24,6 +24,7 @@ namespace API
             //    .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
             //    .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
             CreateMap<BookForUpdateDto, Book>();
+            CreateMap<Book, BookForUpdateDto>();
         }
     }
 }
