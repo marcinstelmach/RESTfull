@@ -7,6 +7,8 @@ using Data.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Service.Helpers;
 using Service.Service;
 
 namespace API.Controllers
@@ -17,12 +19,14 @@ namespace API.Controllers
         private readonly IAuthorRepository _authorRepository;
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<BooksController> _logger;
 
-        public BooksController(IBookRepository bookRepository, IMapper mapper, IAuthorRepository authorRepository)
+        public BooksController(IBookRepository bookRepository, IMapper mapper, IAuthorRepository authorRepository, ILogger<BooksController> logger)
         {
             _bookRepository = bookRepository;
             _mapper = mapper;
             _authorRepository = authorRepository;
+            _logger = logger;
         }
 
 
@@ -55,8 +59,21 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateBookForAuthor(Guid authorId, [FromBody] BookForCreation bookForCreation)
         {
-            if (!ModelState.IsValid)
+            if (bookForCreation == null)
                 return BadRequest();
+
+            if (bookForCreation.Title==bookForCreation.Description)
+            {
+                ModelState.AddModelError(nameof(BookForCreation),
+                    "The provided Description should be different from the title.");
+            }
+
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectRestult(ModelState);
+            }
+
             if (!await _authorRepository.AuthorExists(authorId))
                 return NotFound();
 
@@ -81,6 +98,8 @@ namespace API.Controllers
             if (!await _bookRepository.SaveAsync())
                 throw new Exception($"Deleting book {bookId} for author {authorId} failed on save");
 
+            _logger.LogInformation(100, $"Book {bookId} for author {authorId} was deleted");
+
             return NoContent();
         }
 
@@ -88,8 +107,19 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateBook(Guid authorId, Guid bookId,
             [FromBody] BookForUpdateDto bookForUpdateDto)
         {
-            if (!ModelState.IsValid)
+            if (bookForUpdateDto == null)
                 return BadRequest();
+
+            if (bookForUpdateDto.Description == bookForUpdateDto.Title)
+            {
+                ModelState.AddModelError(nameof(BookForUpdateDto), "The provided description shouldn't be equal to title");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectRestult(ModelState);    
+            }
+
             if (!await _authorRepository.AuthorExists(authorId))
                 return NotFound();
 
@@ -118,51 +148,68 @@ namespace API.Controllers
         }
 
         [HttpPatch("{bookId}")]
-        public async Task<IActionResult> PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId, [FromBody] JsonPatchDocument<BookForUpdateDto> jsonPatchDocument)
+        public async Task<IActionResult> PartiallyUpdateBookForAuthor(Guid authorId, Guid bookId,
+            [FromBody] JsonPatchDocument<BookForUpdateDto> jsonPatchDocument)
         {
-            if (jsonPatchDocument==null)
-            {
+            if (jsonPatchDocument == null)
                 return BadRequest();
-            }
 
             var author = await _authorRepository.GetAuthor(authorId);
-            if (author==null)
-            {
+            if (author == null)
                 return NotFound();
-            }
 
             var bookFromRepo = await _bookRepository.GetBookForAuthor(authorId, bookId);
-            if (bookFromRepo==null)
+            if (bookFromRepo == null)
             {
                 var bookUpdateDto = new BookForUpdateDto();
-                jsonPatchDocument.ApplyTo(bookUpdateDto);
+                jsonPatchDocument.ApplyTo(bookUpdateDto, ModelState);
+                if (bookUpdateDto.Title == bookUpdateDto.Description)
+                {
+                    ModelState.AddModelError(nameof(BookForUpdateDto), "The provided description shoud be different from the title");
+                }
+
+                await TryUpdateModelAsync(bookUpdateDto);
+                if (!ModelState.IsValid)
+                {
+                    return new UnprocessableEntityObjectRestult(ModelState);
+                }
+
                 var bookToAdd = _mapper.Map<Book>(bookUpdateDto);
                 bookToAdd.Id = bookId;
                 bookToAdd.AuthorId = authorId;
 
                 await _bookRepository.AddBookForAuthor(authorId, bookToAdd);
 
-                if (! await _bookRepository.SaveAsync())
-                {
+                if (!await _bookRepository.SaveAsync())
                     throw new Exception($"Adding book {bookId} on save failed");
-                }
                 var bookDto = _mapper.Map<BookDto>(bookToAdd);
 
-                return CreatedAtRoute("GetBookForAuthor", new {authorId = bookToAdd.AuthorId, bookId = bookToAdd.Id}, bookDto);
+                return CreatedAtRoute("GetBookForAuthor", new {authorId = bookToAdd.AuthorId, bookId = bookToAdd.Id},
+                    bookDto);
             }
 
             var bookToPath = _mapper.Map<Book, BookForUpdateDto>(bookFromRepo);
-            jsonPatchDocument.ApplyTo(bookToPath);
-            _mapper.Map(bookToPath, bookFromRepo);
-            //await _bookRepository.UpdateBookForAuthor(bookFromRepo);
-
-            if (! await _bookRepository.SaveAsync())
+            jsonPatchDocument.ApplyTo(bookToPath, ModelState);
+            
+            if (bookToPath.Title==bookToPath.Description)
             {
-                throw new Exception($"Patching book {bookId} on save faild");
+                ModelState.AddModelError(nameof(BookForUpdateDto), "The provided description shoud be different from the title");
             }
+
+            await TryUpdateModelAsync(bookToPath);
+
+            if (!ModelState.IsValid)
+            {
+                return new UnprocessableEntityObjectRestult(ModelState);
+            }
+
+            _mapper.Map(bookToPath, bookFromRepo);
+
+            if (!await _bookRepository.SaveAsync())
+                throw new Exception($"Patching book {bookId} on save faild");
+
 
             return NoContent();
         }
-
-}
+    }
 }

@@ -7,6 +7,8 @@ using Data.DTO;
 using Data.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Service.Helpers;
 using Service.Service;
 
 namespace API.Controllers
@@ -17,26 +19,43 @@ namespace API.Controllers
         private readonly IAuthorRepository _authorRepository;
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
+        private readonly IUrlHelper _urlHelper;
 
-        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository)
+        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository, IUrlHelper urlHelper)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
             _bookRepository = bookRepository;
+            _urlHelper = urlHelper;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAuthors()
+        [HttpGet(Name = "GetAuthors")]
+        public async Task<IActionResult> GetAuthors(AuthorResourceParameters authorResourceParameters)
         {
+            var pageListAuthors = await _authorRepository.GetAuthors(authorResourceParameters);
+            var previousPageLink = pageListAuthors.HasPrevious
+                ? CreateAuthorsResourceUri(authorResourceParameters, ResourceUriType.PreviousPage)
+                : null;
+            var nextPageLink = pageListAuthors.HasNext
+                ? CreateAuthorsResourceUri(authorResourceParameters, ResourceUriType.NextPage)
+                : null;
 
-            //throw new Exception("Just for test");
+            var paginationMetaData = new
+            {
+                totalCount = pageListAuthors.TotalCount,
+                pageSize = pageListAuthors.PageSize,
+                currentPage = pageListAuthors.CurrentPage,
+                totalPages = pageListAuthors.TotalPages,
+                previousPageLink = previousPageLink,
+                nextPageLink = nextPageLink
+            };
 
-            var result = await _authorRepository.GetAuthors();
-            var authorDto = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(result);
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginationMetaData));
+            var authorDto = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(pageListAuthors);
             return Ok(authorDto);
         }
 
-        [HttpGet("{authorId}", Name = "Get_Author")]
+        [HttpGet("{authorId}", Name = "GetAuthor")]
         public async Task<IActionResult> GetAuthor(Guid authorId)
         {
             var author = await _authorRepository.GetAuthor(authorId);
@@ -54,13 +73,13 @@ namespace API.Controllers
             if (!ModelState.IsValid) return BadRequest();
             var author = _mapper.Map<AuthorForCreation, Author>(authorForCreation);
             await _authorRepository.AddAuthor(author);
-            if (! await _authorRepository.SaveAsync())
+            if (!await _authorRepository.SaveAsync())
             {
                 return StatusCode(500, "A problem with save");
             }
 
             var authorDto = _mapper.Map<Author, AuthorDto>(author);
-            return CreatedAtRoute("Get_Author", new {authorId = authorDto.Id}, authorDto);
+            return CreatedAtRoute("GetAuthor", new { authorId = authorDto.Id }, authorDto);
 
         }
 
@@ -80,7 +99,7 @@ namespace API.Controllers
         public async Task<IActionResult> DeleteAuthor(Guid authorId)
         {
             var author = await _authorRepository.GetAuthor(authorId);
-            if (author==null)
+            if (author == null)
             {
                 return NotFound();
             }
@@ -93,6 +112,35 @@ namespace API.Controllers
             await _authorRepository.DeleteAuthor(author);
             await _authorRepository.SaveAsync();
             return NoContent();
+        }
+
+        private string CreateAuthorsResourceUri(AuthorResourceParameters authorResourceParameters, ResourceUriType type)
+        {
+            switch (type)
+            {
+                case ResourceUriType.NextPage:
+                    return _urlHelper.Link("GetAuthors",
+                        new
+                        {
+                            pageNumber = authorResourceParameters.PageNumber - 1,
+                            pageSize = authorResourceParameters.PageSize
+
+                        });
+                case ResourceUriType.PreviousPage:
+                    return _urlHelper.Link("GetAuthors",
+                        new
+                        {
+                            pageNumber = authorResourceParameters.PageNumber + 1,
+                            pageSize = authorResourceParameters.PageSize
+                        });
+                default:
+                    return _urlHelper.Link("GetAuthors",
+                        new
+                        {
+                            pageNumber = authorResourceParameters.PageNumber,
+                            pageSize = authorResourceParameters.PageSize
+                        });
+            }
         }
     }
 }

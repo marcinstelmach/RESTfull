@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Data.Model;
+using Service.Helpers;
 
 namespace Service.Service
 {
     public interface IAuthorRepository
     {
-        Task<IEnumerable<Author>> GetAuthors();
+        Task<PageList<Author>> GetAuthors(AuthorResourceParameters authorResourceParameters);
         Task<Author> GetAuthor(Guid authorId);
         Task<IEnumerable<Author>> GetAuthors(IEnumerable<Guid> authorIds);
         Task AddAuthor(Author author);

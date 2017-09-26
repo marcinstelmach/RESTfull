@@ -5,13 +5,8 @@ using System.Text;
 
 namespace Data.DTO
 {
-    public class BookForCreation
+    public class BookForCreation : BooksForManipulationsDto
     {
-        [Required]
-        [MaxLength(100)]
-        public string Title { get; set; }
-        [Required]
-        [MaxLength(500)]
-        public string Description { get; set; }
+        
     }
 }

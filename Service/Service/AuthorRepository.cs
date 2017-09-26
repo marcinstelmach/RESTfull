@@ -7,6 +7,7 @@ using Data.DAL;
 using Data.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Service.Helpers;
 
 namespace Service.Service
 {
@@ -21,7 +22,7 @@ namespace Service.Service
 
         public async Task AddAuthor(Author author)
         {
-            if (author!=null)
+            if (author != null)
             {
                 _dbContext.Authors.Add(author);
             }
@@ -41,15 +42,18 @@ namespace Service.Service
 
         public async Task<Author> GetAuthor(Guid authorId)
         {
-            var result = await _dbContext.Authors.FirstOrDefaultAsync(s => s.Id == authorId);
-            return result;
+            return await _dbContext.Authors.FirstOrDefaultAsync(s => s.Id == authorId);
         }
 
-        public async Task<IEnumerable<Author>> GetAuthors()
+        public async Task<PageList<Author>> GetAuthors(AuthorResourceParameters authorResourceParameters)
         {
-            return await _dbContext.Authors.OrderBy(s => s.FirstName).ThenBy(s => s.LastName).ToListAsync();
-        }
+            var authors = _dbContext.Authors
+                .OrderBy(s => s.FirstName)
+                .ThenBy(s => s.LastName);
 
+            return await PageList<Author>.Create(authors, authorResourceParameters.PageNumber, authorResourceParameters.PageSize);
+        }
+    
         public async Task<IEnumerable<Author>> GetAuthors(IEnumerable<Guid> authorIds)
         {
             return await _dbContext.Authors.Where(s => authorIds.Contains(s.Id)).OrderBy(s => s.FirstName)
@@ -58,13 +62,13 @@ namespace Service.Service
 
         public async Task<bool> SaveAsync()
         {
-            return await _dbContext.SaveChangesAsync()>=0;
+            return await _dbContext.SaveChangesAsync() >= 0;
         }
 
         public async Task UpdateAuthor(Author author)
         {
             var result = await _dbContext.Authors.FirstOrDefaultAsync(s => s.Id == author.Id);
-            if (result!=null)
+            if (result != null)
             {
                 _dbContext.Authors.Update(author);
             }

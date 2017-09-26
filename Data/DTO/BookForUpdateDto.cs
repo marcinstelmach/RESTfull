@@ -5,13 +5,9 @@ using System.Text;
 
 namespace Data.DTO
 {
-    public class BookForUpdateDto
+    public class BookForUpdateDto : BooksForManipulationsDto
     {
-        [Required]
-        [MaxLength(100)]
-        public string Title { get; set; }
-        [Required]
-        [MaxLength(100)]
-        public string Description { get; set; }
+        [Required(ErrorMessage = "You should fill out the description")]
+        public override string Description { get; set; }
     }
 }
