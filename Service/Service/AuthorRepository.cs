@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Data.DAL;
+using Data.DTO;
 using Data.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -14,10 +15,12 @@ namespace Service.Service
     public class AuthorRepository : IAuthorRepository
     {
         private readonly LibraryContext _dbContext;
+        private readonly IPropertyMappingService _propertyMappingService;
 
-        public AuthorRepository(LibraryContext dbContext)
+        public AuthorRepository(LibraryContext dbContext, IPropertyMappingService mappingService)
         {
             _dbContext = dbContext;
+            _propertyMappingService = mappingService;
         }
 
         public async Task AddAuthor(Author author)
@@ -47,13 +50,33 @@ namespace Service.Service
 
         public async Task<PageList<Author>> GetAuthors(AuthorResourceParameters authorResourceParameters)
         {
-            var authors = _dbContext.Authors
-                .OrderBy(s => s.FirstName)
-                .ThenBy(s => s.LastName);
+            //var authors = _dbContext.Authors
+            //    .OrderBy(s => s.FirstName)
+            //    .ThenBy(s => s.LastName).AsQueryable();
+
+            var authors = _dbContext.Authors.ApplySort(authorResourceParameters.OrderBy, _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
+
+            if (!string.IsNullOrEmpty(authorResourceParameters.Genre))
+            {
+                var genreForWhereClause = authorResourceParameters.Genre
+                    .Trim().ToLowerInvariant();
+                authors = authors.Where(s => s.Genre.ToLowerInvariant() == genreForWhereClause);
+            }
+
+            if (!string.IsNullOrEmpty(authorResourceParameters.SearchQuery))
+            {
+                var searchForWhere = authorResourceParameters.SearchQuery.Trim().ToLowerInvariant();
+                authors = authors.Where(s =>
+                    s.FirstName.Contains(searchForWhere)
+                    || s.LastName.Contains(searchForWhere)
+                    || s.Genre.Contains(searchForWhere));
+            }
+
+
 
             return await PageList<Author>.Create(authors, authorResourceParameters.PageNumber, authorResourceParameters.PageSize);
         }
-    
+
         public async Task<IEnumerable<Author>> GetAuthors(IEnumerable<Guid> authorIds)
         {
             return await _dbContext.Authors.Where(s => authorIds.Contains(s.Id)).OrderBy(s => s.FirstName)

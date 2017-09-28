@@ -20,18 +20,24 @@ namespace API.Controllers
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
         private readonly IUrlHelper _urlHelper;
+        private readonly IPropertyMappingService _propertyMappingService;
 
-        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository, IUrlHelper urlHelper)
+        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository, IUrlHelper urlHelper, IPropertyMappingService mappingService)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
             _bookRepository = bookRepository;
             _urlHelper = urlHelper;
+            _propertyMappingService = mappingService;
         }
 
         [HttpGet(Name = "GetAuthors")]
         public async Task<IActionResult> GetAuthors(AuthorResourceParameters authorResourceParameters)
         {
+            if (!_propertyMappingService.ValidMappingExistFor<AuthorDto, Author>(authorResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
             var pageListAuthors = await _authorRepository.GetAuthors(authorResourceParameters);
             var previousPageLink = pageListAuthors.HasPrevious
                 ? CreateAuthorsResourceUri(authorResourceParameters, ResourceUriType.PreviousPage)
@@ -122,6 +128,9 @@ namespace API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
+                            orderBy = authorResourceParameters.OrderBy,
+                            searchQuery = authorResourceParameters.SearchQuery,
+                            genre = authorResourceParameters.Genre,
                             pageNumber = authorResourceParameters.PageNumber - 1,
                             pageSize = authorResourceParameters.PageSize
 
@@ -130,6 +139,9 @@ namespace API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
+                            orderBy = authorResourceParameters.OrderBy,
+                            searchQuery = authorResourceParameters.SearchQuery,
+                            genre = authorResourceParameters.Genre,
                             pageNumber = authorResourceParameters.PageNumber + 1,
                             pageSize = authorResourceParameters.PageSize
                         });
@@ -137,6 +149,9 @@ namespace API.Controllers
                     return _urlHelper.Link("GetAuthors",
                         new
                         {
+                            orderBy = authorResourceParameters.OrderBy,
+                            searchQuery = authorResourceParameters.SearchQuery,
+                            genre = authorResourceParameters.Genre,
                             pageNumber = authorResourceParameters.PageNumber,
                             pageSize = authorResourceParameters.PageSize
                         });
