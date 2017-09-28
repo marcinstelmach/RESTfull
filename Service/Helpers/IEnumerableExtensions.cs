@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Service.Helpers
 {
-    public static class IEnumerableExtensions
+    public static class EnumerableExtensions
     {
         public static IEnumerable<ExpandoObject> ShapeDate<TSource>(this IEnumerable<TSource> source, string fields)
         {
@@ -31,6 +31,7 @@ namespace Service.Helpers
                 foreach (var field in fieldsAfterSplit)
                 {
                     var propertyName = field.Trim();
+                    //if not found propertyInfo is null
                     var propertyInfo = typeof(TSource).GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                     if (propertyInfo == null)
@@ -41,7 +42,7 @@ namespace Service.Helpers
                 } 
             }
 
-            foreach (TSource sourceObject in source)
+            foreach (var sourceObject in source)
             {
                 var dataShapedObject = new ExpandoObject();
 
