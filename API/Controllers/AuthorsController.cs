@@ -21,19 +21,26 @@ namespace API.Controllers
         private readonly IMapper _mapper;
         private readonly IUrlHelper _urlHelper;
         private readonly IPropertyMappingService _propertyMappingService;
+        private readonly ITypeHelperService _typeHelperService;
 
-        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository, IUrlHelper urlHelper, IPropertyMappingService mappingService)
+        public AuthorsController(IAuthorRepository authorRepository, IMapper mapper, IBookRepository bookRepository, IUrlHelper urlHelper, IPropertyMappingService mappingService, ITypeHelperService typeHelperService)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
             _bookRepository = bookRepository;
             _urlHelper = urlHelper;
             _propertyMappingService = mappingService;
+            _typeHelperService = typeHelperService;
         }
 
         [HttpGet(Name = "GetAuthors")]
         public async Task<IActionResult> GetAuthors(AuthorResourceParameters authorResourceParameters)
         {
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>(authorResourceParameters.Fields))
+            {
+                return BadRequest();
+            }
+
             if (!_propertyMappingService.ValidMappingExistFor<AuthorDto, Author>(authorResourceParameters.OrderBy))
             {
                 return BadRequest();
@@ -58,19 +65,26 @@ namespace API.Controllers
 
             Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(paginationMetaData));
             var authorDto = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(pageListAuthors);
+           
             return Ok(authorDto.ShapeDate(authorResourceParameters.Fields));
         }
 
         [HttpGet("{authorId}", Name = "GetAuthor")]
-        public async Task<IActionResult> GetAuthor(Guid authorId)
+        public async Task<IActionResult> GetAuthor(Guid authorId, [FromQuery]string fields)
         {
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>(fields))
+            {
+                return BadRequest();
+            }
+
             var author = await _authorRepository.GetAuthor(authorId);
             if (author == null)
             {
                 return NotFound("Author not found");
             }
             var authorDto = _mapper.Map<Author, AuthorDto>(author);
-            return Ok(authorDto);
+            
+            return Ok(authorDto.ShapeData(fields));
         }
 
         [HttpPost]

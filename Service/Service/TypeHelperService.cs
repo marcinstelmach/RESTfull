@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Service.Service
 {
-    public class TypeHelperService
+    public class TypeHelperService : ITypeHelperService
     {
         public bool TypeHasProperties<T>(string fields)
         {
@@ -17,7 +17,7 @@ namespace Service.Service
 
             var splitedFields = fields.Split(',');
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            return splitedFields.All(field => properties.Any(prop => prop.Name == field.Trim()));
+            return splitedFields.All(field => properties.Any(prop => prop.Name.ToLowerInvariant() == field.Trim().ToLowerInvariant()));
         }
     }
 }

@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Serialization;
 using NLog.Extensions.Logging;
 using Service.Service;
 
@@ -39,11 +40,15 @@ namespace API
                 option => option.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             // Add framework services.
             services.AddMvc(setupAction =>
-            {
-                setupAction.ReturnHttpNotAcceptable = true;
-                setupAction.OutputFormatters.Add(new XmlSerializerOutputFormatter());
-                setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
-            });
+                {
+                    setupAction.ReturnHttpNotAcceptable = true;
+                    setupAction.OutputFormatters.Add(new XmlSerializerOutputFormatter());
+                    setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+                })
+                .AddJsonOptions(option =>
+                    option.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver());
+
+
             services.AddScoped<IAuthorRepository, AuthorRepository>();
             services.AddScoped<IBookRepository, BookRepository>();
             services.AddAutoMapper();
@@ -53,6 +58,7 @@ namespace API
                 var actionContext = implementationFactory.GetService<IActionContextAccessor>().ActionContext;
                 return new UrlHelper(actionContext);
             });
+            services.AddTransient<ITypeHelperService, TypeHelperService>();
             services.AddTransient<IPropertyMappingService, PropertyMappingService>();
         }
 
